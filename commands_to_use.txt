@@ -1,0 +1,152 @@
+# use below command in models/research directory:
+-------------------------------------------------
+python generate_tfrecord.py --csv_input /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/test_labels.csv  --output_path Text_test.record --image_dir /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/test
+
+python generate_tfrecord.py --csv_input /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/train_Ph1_labels.csv  --output_path Text_train_Ph1.record --image_dir /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/train_Ph1
+
+python generate_tfrecord.py --csv_input /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/train_Ph2_labels.csv  --output_path Text_train_Ph2.record --image_dir /home/ashwini/TextDetection_MobilenetSSD/Final_Text_Dataset/train_Ph2
+
+python generate_tfrecord.py --csv_input /home/earth/ashwini/Final_Text_Dataset/csvs/train_Ph2_labels.csv  --output_path Text_train_Ph2.record --image_dir /home/earth/ashwini/Final_Text_Dataset/train_Ph2_4750
+
+python generate_tfrecord.py --csv_input /home/earth/ashwini/HD/HD_train.csv --output_path HD_train.record --image_dir /home/earth/datasets/human_coco/img
+
+python generate_tfrecord.py --csv_input /home/ashwini/TextDetection_MobilenetSSD/Final_Human_Dataset_OID/HD_Google_OID_train.csv --output_path HD_OID_train.record --image_dir /home/ashwini/TextDetection_MobilenetSSD/Final_Human_Dataset_OID/train_images
+
+
+error :   File "/home/earth/ashwini/models/research/object_detection/utils/dataset_util.py", line 26, in int64_list_feature
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+TypeError: None has type NoneType, but expected one of: int, long
+
+>> resolution:
+change your custom label in generate_tfrecord.py
+==============================================================================================================================================
+
+# use below command in models/research directory:
+
+python train.py --logtostderr --train_dir=training/ --pipeline_config_path=training/ssd_mobilenet_v1_coco.config
+python train.py --logtostderr --train_dir=logs/ --pipeline_config_path=training/ssd_mobilenet_v1_coco.config
+python train.py --logtostderr --train_dir=logs/ --pipeline_config_path=training/ssd_mobilenet_v1_coco.config
+
+
+python object_detection/eval.py \    --logtostderr \    --pipeline_config_path=training/ssd_mobilenet_v1_pets.config \    --checkpoint_dir=training/ \    --eval_dir=./eval_text
+
+python object_detection/eval.py \    --logtostderr \    --pipeline_config_path=training/ssd_mobilenet_v1_pets.config \    --checkpoint_dir=training/ \    --eval_dir=./eval_text
+
+tensorboard --logdir=./training/
+
+# use below command in models/research directory:
+export PYTHONPATH=$PYTHONPATH:/home/ashwini/TextDetection_MobilenetSSD/models/research:/home/ashwini/TextDetection_MobilenetSSD/models/research/slim
+
+### run from object_detection_folder:
+
+python export_inference_graph.py --input_type image_tensor --pipeline_config_path ../training/ssd_mobilenet_v1_coco.config --trained_checkpoint_prefix ../training/model.ckpt-25 --output_directory ../inference_graph
+
+python export_inference_graph.py --input_type image_tensor --pipeline_config_path /home/ashwini/edgetpu/detection/inference_check/earth/pipeline.config --trained_checkpoint_prefix /home/ashwini/edgetpu/detection/inference_check/earth/model.ckpt-32295 --output_directory /home/ashwini/edgetpu/detection/inference_check/earth_op
+
+python export_inference_graph.py --input_type image_tensor --pipeline_config_path /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD_OID/pipeline.config --trained_checkpoint_prefix /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD_OID/model.ckpt-4827 --output_directory ../inference_graph
+
+/home/ashwini/TextDetection_MobilenetSSD/models/research/training_HD/ssd_mobilenet_v1_quantized_300x300_coco14_sync.config
+
+/home/ashwini/TextDetection_MobilenetSSD/models/research/inference_graph/saved_model/saved_model.pb
+
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_0/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_0/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_1_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_1_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_1_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_1_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_2_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_2_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_2_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_2_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_3_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_3_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_3_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_3_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_4_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_4_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_4_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_4_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_5_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_5_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_5_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_5_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_6_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_6_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_6_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_6_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_7_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_7_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_7_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_7_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_8_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_8_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_8_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_8_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_9_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_9_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_9_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_9_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_10_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_10_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_10_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_10_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_11_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_11_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_11_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_11_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_12_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_12_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_12_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_12_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_13_depthwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_13_depthwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_13_pointwise/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_13_pointwise/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_2_1x1_256/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_2_1x1_256/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_2_3x3_s2_512/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_2_3x3_s2_512/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_3_1x1_128/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_3_1x1_128/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_3_3x3_s2_256/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_3_3x3_s2_256/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_4_1x1_128/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_4_1x1_128/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_4_3x3_s2_256/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_4_3x3_s2_256/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_5_1x1_64/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_1_Conv2d_5_1x1_64/BatchNorm/AssignMovingAvg_1
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_5_3x3_s2_128/BatchNorm/AssignMovingAvg
+	 FeatureExtractor/MobilenetV1/Conv2d_13_pointwise_2_Conv2d_5_3x3_s2_128/BatchNorm/AssignMovingAvg_1
+
+
+### to split dataset in train and test :
+
+shuf -n 100 -e * | xargs -i mv {} path-to-new-folder
+
+in models/research directory:
+python train.py --logtostderr --train_dir=logs/ --pipeline_config_path=training/ssd_mobilenet_v1_quantized_300x300_coco14_sync.config
+
+some changes are present in config file which needs to be done. follow: "https://coral.withgoogle.com/docs/edgetpu/retrain-detection/"
+
+use quantize config but finetune checkpoint should be the model.ckpt which we used earlier i.e for normal CPU training.
+
+
+
+
+pip3 install flask
+pip3 install flask_socketio
+pip3 install dlib
+pip3 install imutils
+
+
+lsusb command for usb coral accelerator
+
+- 13/12/19 line added at function get_detection_Results : new_img = Image.fromarray(input_img)
+
+
+
+https://faceapi-ml-coe.cognitiveservices.azure.com/
+
+31beb9735cb041cb8a2bc8979ab885d4

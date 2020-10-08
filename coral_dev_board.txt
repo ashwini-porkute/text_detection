@@ -1,0 +1,545 @@
+1) Links to get specification and hands-on coral board.
+------------------------------------------------------------------------------------------------------------------------------------
+ 
+https://coral.withgoogle.com/products/dev-board/
+https://www.tensorflow.org/lite
+https://coral.withgoogle.com/docs/dev-board/datasheet/
+https://medium.com/@aallan/hands-on-with-the-coral-dev-board-adbcc317b6af
+https://coral.withgoogle.com/docs/dev-board/get-started/
+
+
+*** https://coral.withgoogle.com/docs/dev-board/get-started/  --> beginner's guide for demo run.
+
+for converting model to tflite:
+------------------------------------------------------------------------------------------------------------------------------------
+https://coral.withgoogle.com/docs/edgetpu/retrain-detection/
+https://coral.withgoogle.com/docs/edgetpu/retrain-classification-ondevice/
+https://coral.withgoogle.com/docs/edgetpu/models-intro/
+
+
+https://coral.withgoogle.com/static/docs/images/edgetpu/compile-workflow.png
+
+
+after getting tflite model, steps of executing object detection:
+------------------------------------------------------------------------------------------------------------------------------------
+https://www.pyimagesearch.com/2019/05/13/object-detection-and-image-classification-with-google-coral-usb-accelerator/
+https://coral.withgoogle.com/examples/detect-image/
+
+
+
+To get ip address of board type "hostname -I" on mendel terminal. 
+scp ashwini@10.27.22.241:/home/ashwini/Downloads/person_with_dog.jpeg .     ---> from mendel terminal
+
+
+
+steps for requirements in host PC:
+------------------------------------------------------------------------------------------------------------------------------------
+- $ sudo apt install screen or prefer to use minicom, sudo apt-get minicom
+- $ sudo apt install fastboot     OR     https://developer.android.com/studio/releases/platform-tools#downloads (for fastboot dwld page)
+- fastboot --version = (fastboot version debian) fastboot version 29.0.4-5871666
+
+
+
+steps to install mendel-development-tool on host PC:
+------------------------------------------------------------------------------------------------------------------------------------
+- $ echo "deb https://packages.cloud.google.com/apt coral-mdt-stable main" | sudo tee /etc/apt/sources.list.d/mdt.list
+- $ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+- $ sudo apt-get update
+- $ sudo apt-get install mendel-development-tool
+- MDT version 1.4.1
+
+
+STEPS:
+======
+
+1) Install the udev rule or driver on your host computer:
+
+- sudo sh -c "echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"0525\", MODE=\"0664\", \
+GROUP=\"plugdev\", TAG+=\"uaccess\"' >> /etc/udev/rules.d/65-edgetpu-board.rules"
+
+>> cat /etc/udev/rules.d/65-edgetpu-board.rules  --->  SUBSYSTEM=="usb", ATTR{idVendor}=="0525", MODE="0664", GROUP="plugdev", TAG+="uaccess"
+
+- sudo udevadm control --reload-rules && udevadm trigger
+
+------------------------------------------------------------------------------------------------------------------------------------
+2) Connect to the serial console:
+
+- After connecting the serial console port, type below line on host PC terminal: (after connecting orange & green LED glows)
+- Open minicom by :
+  - First check whether "ls /dev" has output of ttyUSB0 or not in list
+  - If present then run "sudo minicom ttyUSB0"
+- You will get a minicom terminal ctrl-AO for menu, ctrl-AX to exit.
+- Set the serial port configuration : Port as "ttyUSB0", hardware flow control as "No", And Baud rate to 115200.
+- Save the configuration and check whether you are in device minicom terminal.
+
+------------------------------------------------------------------------------------------------------------------------------------
+3) Power ON the board by connecting the type C cable.
+NOTE : After power ON, you will get several log messages, on minicom terminal, so after mesaage printing starts and Before 3 seconds, press spacebar.
+
+- After hitting spacebar, you will get uboot prompt like "u-boot=>"
+- In u-boot console, enter "fastboot 0"
+- CONNECT data type-C connector to data port. and then, on normal (Host PC) terminal check for "fastboot devices".
+
+------------------------------------------------------------------------------------------------------------------------------------
+4) Flashing the kernel image:
+
+for first time flashing the kernel image:(skip this step if already flashed the kernel(mendel) image).
+
+Run "bash flash.sh" on normal (Host PC) terminal, wait for 5 mins to write the kernel image on board's eMMC.
+
+
+							OR
+
+
+Hit RESET key on board and see the minicom terminal after that press Enter. (If Kernel image is already flashed).
+------------------------------------------------------------------------------------------------------------------------------------
+
+- Press Enter key in minicom terminal(where kernel image write has occured as many dots), then it will ask for login and password
+
+login : mendel
+password : mendel
+
+- On normal (Host PC) terminal, enter "mdt shell", you will get mendel terminal prompt on your local pc(you can have this prompt there itself).
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+5) Run quick Demo:
+
+- Connect HDMI Monitor to board.
+- Enter "edgetpu_demo --device" for demo to get run on HDMI monitor. Or else if you are connected to board via SSH, Run "edgetpu_demo --stream".
+
+
+
+NOTE: Use "sudo shutdown now" on minicom or mendel terminal after all things are done, to avoid corrupting kernel image.
+
+
+
+
+COMMANDS:
+------------------------------------------------------------------------------------------------------------------------------------
+cd /usr/lib/python3/dist-packages/edgetpu/demo/
+
+python3 object_detection.py --model /home/mendel/mobilenet_ssd_v1_coco_quant_postprocess_edgetpu.tflite --input /home/mendel/person_with_dog.jpeg --label /home/mendel/coco_labels.txt --output /home/mendel/object_detection_result.jpg
+
+
+python3 object_detection.py --model /home/mendel/detect.tflite --input /home/mendel/Ro_90_n_HSV_P090831077.jpg --label /home/mendel/text_labels.txt --output /home/mendel/TEXT_detection_result.jpg
+
+
+=======================================================================================================================================
+Steps to make tflite model from Checkpoint,config and check inference on board:
+=======================================================================================================================================
+STEP 1:		locate export_tflite_ssd_graph.py file and run with below command
+
+** python object_detection/export_tflite_ssd_graph.py \
+--pipeline_config_path=/home/ashwini/TextDetection_MobilenetSSD/models/research/ckpts_phases/Phase-1/phase1_44836/pipeline.config \
+--trained_checkpoint_prefix=/home/ashwini/TextDetection_MobilenetSSD/models/research/ckpts_phases/Phase-1/phase1_44836/model.ckpt \
+--output_directory=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp \
+--add_postprocessing_op=true
+
+---------------------------------------------------------------------------------------------------------------------------------------
+STEP 2: 	run toco API for conversion with below command:
+
+** python /home/ashwini/tht/bin/toco --graph_def_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/tflite_graph.pb --output_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/detect.tflite --input_shapes=1,300,300,3 --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3'  --inference_type=QUANTIZED_UINT8 --mean_values=128 --std_dev_values=128 --allow_custom_ops
+
+
+output will be like(if error) -
+
+>> 2019-10-01 14:15:54.590253: F tensorflow/lite/toco/tooling_util.cc:1702] Array FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_0/Relu6, which is an input to the DepthwiseConv operator producing the output array FeatureExtractor/MobilenetV1/MobilenetV1/Conv2d_1_depthwise/Relu6, is lacking min/max data, which is necessary for quantization. If accuracy matters, either target a non-quantized output format, or run quantized training with your model from a floating point checkpoint to change the input graph to contain min/max information. If you don't care about accuracy, you can pass --default_ranges_min= and --default_ranges_max= for easy experimentation.
+Aborted (core dumped)
+
+thus, follow this command given below (if you don't want accuracy of your model for prediction then only use below command or else you need to train the model with quantized training and then make tflite model from step 1):
+
+** python /home/ashwini/tht/bin/toco --graph_def_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/tflite_graph.pb --output_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/detect.tflite --input_shapes=1,300,300,3 --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3'  --inference_type=QUANTIZED_UINT8 --mean_values=128 --std_dev_values=128 --change_concat_input_ranges=false --allow_custom_ops --default_ranges_min=0 --default_ranges_max=6
+
+---------------------------------------------------------------------------------------------------------------------------------------
+STEP 3: 	run the object detection.py script for inference check 
+
+goto dir : cd /usr/lib/python3/dist-packages/edgetpu/demo (on mendel terminal) and then run below command:
+
+** python3 object_detection.py --model /home/mendel/detect.tflite --input /home/mendel/DSC02395.jpg --label /home/mendel/text_labels.txt --output /home/mendel/TEXT_detection_result_DSC02395.jpg
+
+
+
+
+=======================================================================================================================================
+Steps to retrain model with quantization for coral board:
+=======================================================================================================================================
+Follow https://coral.withgoogle.com/docs/edgetpu/retrain-detection/
+https://coral.withgoogle.com/docs/edgetpu/models-intro/#transfer-learning
+
+
+
+=======================================================================================================================================
+to check GPU is free or not and conda related things:
+=======================================================================================================================================
+Follow "https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/"
+
+>> nvidia-smi -i 0 -q
+
+>> nvidia-smi -i 0 -q MEMORY
+
+>> conda create -n coral python=2.7 anaconda
+
+>> source ~/anaconda3/bin/activate, source activate coral
+
+>> conda deactivate
+
+
+>> source ~/anaconda3/bin/activate
+>> conda activate coral
+
+++ INPUT_TENSORS=normalized_input_image_tensor
+++ OUTPUT_TENSORS=TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3
+++ OBJ_DET_DIR=/tensorflow/models/research
+++ LEARN_DIR=/tensorflow/models/research/learn_pet
+++ DATASET_DIR=/tensorflow/models/research/learn_pet/pet
+++ CKPT_DIR=/tensorflow/models/research/learn_pet/ckpt
+++ TRAIN_DIR=/tensorflow/models/research/learn_pet/train
+++ OUTPUT_DIR=/tensorflow/models/research/learn_pet/models
++ mkdir /tensorflow/models/research/learn_pet/train
++ python object_detection/model_main.py --pipeline_config_path=/tensorflow/models/research/learn_pet/ckpt/pipeline.config --model_dir=/tensorflow/models/research/learn_pet/train --num_train_steps=500 --num_eval_steps=100
+
+
+python object_detection/model_main.py \
+  --pipeline_config_path="${CKPT_DIR}/pipeline.config" \
+  --model_dir="${TRAIN_DIR}" \
+  --num_train_steps="${num_training_steps}" \
+  --num_eval_steps="${num_eval_steps}"
+
+EXPORTING frozen graph from checkpoint...
++ python object_detection/export_tflite_ssd_graph.py --pipeline_config_path=/tensorflow/models/research/learn_pet/ckpt/pipeline.config --trained_checkpoint_prefix=/tensorflow/models/research/learn_pet/train/model.ckpt-0 --output_directory=/tensorflow/models/research/learn_pet/models --add_postprocessing_op=true
+2019-10-07 07:22:11.262789: I tensorflow/tools/graph_transforms/transform_graph.cc:317] Applying strip_unused_nodes
++ echo 'CONVERTING frozen graph to TF Lite file...'
+CONVERTING frozen graph to TF Lite file...
++ tflite_convert --output_file=/tensorflow/models/research/learn_pet/models/output_tflite_graph.tflite --graph_def_file=/tensorflow/models/research/learn_pet/models/tflite_graph.pb --inference_type=QUANTIZED_UINT8 --input_arrays=normalized_input_image_tensor --output_arrays=TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3 --mean_values=128 --std_dev_values=128 --input_shapes=1,300,300,3 --change_concat_input_ranges=false --allow_nudging_weights_to_use_fast_gemm_kernel=true --allow_custom_ops
++ echo 'TFLite graph generated at /tensorflow/models/research/learn_pet/models/output_tflite_graph.tflite'
+TFLite graph generated at /tensorflow/models/research/learn_pet/models/output_tflite_graph.tflite
+
+
+python train.py --logtostderr --train_dir=logs/ --pipeline_config_path=training/ssd_mobilenet_v1_quantized_300x300_coco14_sync.config
+
+
+================================================ For docker ==========================================================================
+
+for docker starting goto edgetpu/detection:
+
+*** first check $DETECT_DIR ?? by running cd $DETECT_DIR
+
+*** docker run --name edgetpu-detect \
+--rm -it --privileged -p 6006:6006 \
+--mount type=bind,src=${DETECT_DIR},dst=/tensorflow/models/research/learn_pet \
+detect-tutorial
+
+(below commands for normal PC terminal)
+*** docker ps (to get the container id)
+
+*** mkdir -p /var/www/app (to make directory in container docker)
+
+*** for f in /home/ashwini/edgetpu/detection/inference_check/earth; do sudo docker cp $f 6fc3ef7e3c56:/tensorflow/models/research/temp_storage/; done  (to copy file from host system to docker container)
+
+
+=========================================== from ckpt to tflite compilation ===========================================================
+
+*** STEP 1:
+python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="${CKPT_DIR}/pipeline.config" \
+  --trained_checkpoint_prefix="${TRAIN_DIR}/model.ckpt-${ckpt_number}" \
+  --output_directory="${OUTPUT_DIR}" \
+  --add_postprocessing_op=true
+
+EXAMPLE :
+
+*** python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="/home/ashwini/edgetpu/detection/inference_check/earth/pipeline.config" \
+  --trained_checkpoint_prefix="/home/ashwini/edgetpu/detection/inference_check/earth/model.ckpt-32295" \
+  --output_directory="/home/ashwini/edgetpu/detection/inference_check/earth_op" \
+  --add_postprocessing_op=true
+
+*** python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="/home/ashwini/edgetpu/detection/inference_check/softnautics_122/pipeline.config" \
+  --trained_checkpoint_prefix="/home/ashwini/edgetpu/detection/inference_check/softnautics_122/model.ckpt-12128" \
+  --output_directory="/home/ashwini/edgetpu/detection/inference_check/softnautics_122_op" \
+  --add_postprocessing_op=true
+
+*** STEP 2:
+tflite_convert \
+  --output_file="${OUTPUT_DIR}/output_tflite_graph.tflite" \
+  --graph_def_file="${OUTPUT_DIR}/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="${INPUT_TENSORS}" \
+  --output_arrays="${OUTPUT_TENSORS}" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+EXAMPLE :
+
+*** tflite_convert \
+  --output_file="/home/ashwini/edgetpu/detection/inference_check/earth_op/output_tflite_graph.tflite" \
+  --graph_def_file="/home/ashwini/edgetpu/detection/inference_check/earth_op/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="normalized_input_image_tensor" \
+  --output_arrays="TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+
+*** tflite_convert \
+  --output_file="/home/ashwini/edgetpu/detection/inference_check/softnautics_122_op/output_tflite_graph.tflite" \
+  --graph_def_file="/home/ashwini/edgetpu/detection/inference_check/softnautics_122_op/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="normalized_input_image_tensor" \
+  --output_arrays="TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+or
+
+*** python /home/ashwini/tht/bin/toco --graph_def_file=/home/ashwini/edgetpu/detection/inference_check/softnautics_122_op/tflite_graph.pb --output_file=/home/ashwini/edgetpu/detection/inference_check/softnautics_122_op/detect.tflite --input_shapes=1,300,300,3 --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3'  --inference_type=QUANTIZED_UINT8 --mean_values=128 --std_dev_values=128 --change_concat_input_ranges=false --allow_custom_ops --default_ranges_min=0 --default_ranges_max=6
+
+python /home/ashwini/tht/bin/toco --graph_def_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/tflite_graph.pb --output_file=/home/ashwini/TextDetection_MobilenetSSD/models/research/temp/detect.tflite --input_shapes=1,300,300,3 --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3'  --inference_type=QUANTIZED_UINT8 --mean_values=128 --std_dev_values=128 --allow_custom_ops
+
+*** STEP 3: (Edge TPU Compiler version 2.0.267685300)
+edgetpu_compiler output_tflite_graph.tflite
+
+>> Edge TPU Compiler version 2.0.267685300
+
+Model compiled successfully in 460 ms.
+
+Input model: output_tflite_graph.tflite
+Input size: 5.33MiB
+Output model: output_tflite_graph_edgetpu.tflite
+Output size: 5.75MiB
+On-chip memory available for caching model parameters: 7.62MiB
+On-chip memory used for caching model parameters: 5.66MiB
+Off-chip memory used for streaming uncached model parameters: 0.00B
+Number of Edge TPU subgraphs: 1
+Total number of operations: 64
+Operation log: output_tflite_graph_edgetpu.log
+
+Model successfully compiled but not all operations are supported by the Edge TPU. A percentage of the model will instead run on the CPU, which is slower. If possible, consider updating your model to use only operations supported by the Edge TPU. For details, visit g.co/coral/model-reqs.
+Number of operations that will run on Edge TPU: 63
+Number of operations that will run on CPU: 1
+See the operation log file for individual operation details.
+
+
+*** STEP 4:
+>> goto:  /usr/lib/python3/dist-packages/edgetpu/demo/
+
+python3 object_detection.py --model /home/mendel/edgetpu_tflite/earth/output_tflite_graph_edgetpu.tflite --input /home/mendel/text_images/15_07.jpg --label /home/mendel/text_labels.txt --output /home/mendel/text_images_op/TEXT_DETECTION_RESULT_15_07.jpg
+
+python3 object_detection.py --model /home/mendel/edgetpu_tflite/softnautics_122/output_tflite_graph_edgetpu.tflite --input /home/mendel/text_images/DSC02356.jpg --label /home/mendel/text_labels.txt --output /home/mendel/text_images_op/TEXT_DETECTION_RESULT_DSC02356.jpg
+
+*** check the difference in inference time:
+for that need to check the inference execution time for .pb file(frozen from export_inference_graph.py) and .tflite(export_ssd_lite_graph.py)
+for .pb use object_detection_on_single_image.py and for .tflite inference use mendel's edgetpu object_detection.py
+size: .pb(frozen) = 22.8 MB
+      .pb(for tflite) = 22.5 MB
+      .tflite (not compiled) = 5.6MB
+      .tflite (compiled) = 6MB
+=======================================================================================================================================
+
+from  cd ~/tht/lib/python3.5/site-packages
+
+>> python3 allocate_tensors.py 
+
+*** input_details: [{'dtype': <class 'numpy.uint8'>, 'shape': array([  1, 300, 300,   3], dtype=int32), 'index': 175, 'name': 'normalized_input_image_tensor', 'quantization': (0.0078125, 128)}]
+
+*** output_details: [{'dtype': <class 'numpy.float32'>, 'shape': array([ 1, 10,  4], dtype=int32), 'index': 167, 'name': 'TFLite_Detection_PostProcess', 'quantization': (0.0, 0)}, {'dtype': <class 'numpy.float32'>, 'shape': array([ 1, 10], dtype=int32), 'index': 168, 'name': 'TFLite_Detection_PostProcess:1', 'quantization': (0.0, 0)}, {'dtype': <class 'numpy.float32'>, 'shape': array([ 1, 10], dtype=int32), 'index': 169, 'name': 'TFLite_Detection_PostProcess:2', 'quantization': (0.0, 0)}, {'dtype': <class 'numpy.float32'>, 'shape': array([1], dtype=int32), 'index': 170, 'name': 'TFLite_Detection_PostProcess:3', 'quantization': (0.0, 0)}]
+
+
+
+***** edgetpu_compiler --min_runtime_version 10 output_tflite_graph.tflite
+
+
+to take random 100 images from 1 folder to other:
+
+find . -maxdepth 1 -type f | head -100 | xargs cp -t ../Person
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+python export_inference_graph.py --input_type image_tensor --pipeline_config_path /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/pipeline.config --trained_checkpoint_prefix /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/model.ckpt-16246 --output_directory /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/coral_softnautics_122_16246ckpt_pb_tflite
+
+
+python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/pipeline.config" \
+  --trained_checkpoint_prefix="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/model.ckpt-16246" \
+  --output_directory="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/coral_softnautics_122_16246ckpt_pb_tflite/for_Coralboard_inference" \
+  --add_postprocessing_op=true
+
+tflite_convert \
+  --output_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/coral_softnautics_122_16246ckpt_pb_tflite/for_Coralboard_inference/output_tflite_graph_TEXT.tflite" \
+  --graph_def_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_coral_softnautics_122_16246ckpt/coral_softnautics_122_16246ckpt_pb_tflite/for_Coralboard_inference/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="normalized_input_image_tensor" \
+  --output_arrays="TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+
+
+user.name=ashwini-porkute
+user.email=ashwini.porkute@softnautics.com
+http.sslcainfo=/etc/ssl/certs/ca-certificates.crt
+color.ui=true
+
+create Branch : SSDv1/v2 (Whatever is version )
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++ Human Detection PC ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+python export_inference_graph.py --input_type image_tensor --pipeline_config_path /home/ashwini/TextDetection_MobilenetSSD/models/research/training_HD/ssd_mobilenet_v1_quantized_300x300_coco14_sync.config --trained_checkpoint_prefix /home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD/model.ckpt-22146 --output_directory /home/ashwini/TextDetection_MobilenetSSD/models/research/inference_graph
+
+$ python Object_detection_image.py
+>> Total images detected : 41/100
+
+Inference time for 41 images : 8.896542072296143 seconds...!!!
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++ Human Detection Coral ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD/pipeline.config" \
+  --trained_checkpoint_prefix="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD/model.ckpt-22146" \
+  --output_directory="/home/ashwini/TextDetection_MobilenetSSD/models/research/HD_earth_op" \
+  --add_postprocessing_op=true
+
+
+tflite_convert \
+  --output_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/HD_earth_op/tflite/output_tflite_graph_HD.tflite" \
+  --graph_def_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/HD_earth_op/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="normalized_input_image_tensor" \
+  --output_arrays="TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+edgetpu_compiler --min_runtime_version 10 output_tflite_graph_HD.tflite
+
+python3 object_detection_HD.py --model /home/mendel/edgetpu_tflite_HD/output_tflite_graph_HD_edgetpu.tflite --input /home/mendel/HD_images/ --label /home/mendel/HD_labels.txt --output /home/mendel/HD_images_op/
+
+
+* python3 object_detection_HD.py --model /home/mendel/edgetpu_tflite_HD/output_tflite_graph_HD_edgetpu.tflite --input /home/mendel/HD_gerrit_images/ --label /home/mendel/HD_labels.txt --output /home/mendel/HD_images_op/
+
+
+
+
+sudo python3 hd_api.py --model /home/mendel/edgetpu_tflite_HD/output_tflite_graph_HD_edgetpu.tflite --input /home/mendel/HD_gerrit_images/a69fa731bd846c47.jpg --label /home/mendel/HD_labels.txt --output /home/mendel/HD_images_op/a69fa731bd846c47_op.jpg
+
+
+
+
+>> Total images detected : 56/100
+
+Inference time for 56 images : 0.8317341804504395 seconds...!!!
+
+
+
+http://www.image-net.org/synset?wnid=n02084071
+http://image-net.org/synset?wnid=n02472293   (Human)
+
+human = 02472987
+http://www.image-net.org/api/text/imagenet.synset.geturls.getmapping?wnid=n02472293
+
+http://www.image-net.org/api/download/imagenet.bbox.synset?wnid=n02472293
+
+https://github.com/tzutalin/ImageNet_Utils.git
+
+
+
+
+- humandet_mobilenet_coco_coral.tflite
+- humandet_mobilenet_oid_coral.tflite
+
+ python object_detection/export_tflite_ssd_graph.py \
+  --pipeline_config_path="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD/pipeline.config" \
+  --trained_checkpoint_prefix="/home/ashwini/TextDetection_MobilenetSSD/models/research/logs_HD/model.ckpt-15352" \
+  --output_directory="/home/ashwini/TextDetection_MobilenetSSD/models/research/FINAL_COCO_pbfile_15352ckpt" \
+  --add_postprocessing_op=true
+
+tflite_convert \
+  --output_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/FINAL_COCO_pbfile_15352ckpt/output_tflite_graph_COCO.tflite" \
+  --graph_def_file="/home/ashwini/TextDetection_MobilenetSSD/models/research/FINAL_COCO_pbfile_15352ckpt/tflite_graph.pb" \
+  --inference_type=QUANTIZED_UINT8 \
+  --input_arrays="normalized_input_image_tensor" \
+  --output_arrays="TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3" \
+  --mean_values=128 \
+  --std_dev_values=128 \
+  --input_shapes=1,300,300,3 \
+  --change_concat_input_ranges=false \
+  --allow_nudging_weights_to_use_fast_gemm_kernel=true \
+  --allow_custom_ops
+
+
+ans :  [<edgetpu.detection.engine.DetectionCandidate object at 0xffff7599a188>, <edgetpu.detection.engine.DetectionCandidate object at 0xffff7599a1c8>] <class 'list'> 2
+__class__ <class 'edgetpu.detection.engine.DetectionCandidate'>
+__delattr__ <method-wrapper '__delattr__' of DetectionCandidate object at 0xffff7599a188>
+__dir__ <built-in method __dir__ of DetectionCandidate object at 0xffff7599a188>
+__doc__ Data structure represents one detection candidate.
+__eq__ <method-wrapper '__eq__' of DetectionCandidate object at 0xffff7599a188>
+__format__ <built-in method __format__ of DetectionCandidate object at 0xffff7599a188>
+__ge__ <method-wrapper '__ge__' of DetectionCandidate object at 0xffff7599a188>
+__getattribute__ <method-wrapper '__getattribute__' of DetectionCandidate object at 0xffff7599a188>
+__gt__ <method-wrapper '__gt__' of DetectionCandidate object at 0xffff7599a188>
+__hash__ <method-wrapper '__hash__' of DetectionCandidate object at 0xffff7599a188>
+__init__ <bound method DetectionCandidate.__init__ of <edgetpu.detection.engine.DetectionCandidate object at 0xffff7599a188>>
+__le__ <method-wrapper '__le__' of DetectionCandidate object at 0xffff7599a188>
+__lt__ <method-wrapper '__lt__' of DetectionCandidate object at 0xffff7599a188>
+__module__ edgetpu.detection.engine
+__ne__ <method-wrapper '__ne__' of DetectionCandidate object at 0xffff7599a188>
+__new__ <built-in method __new__ of type object at 0xaaaae6f925d0>
+__reduce__ <built-in method __reduce__ of DetectionCandidate object at 0xffff7599a188>
+__reduce_ex__ <built-in method __reduce_ex__ of DetectionCandidate object at 0xffff7599a188>
+__repr__ <method-wrapper '__repr__' of DetectionCandidate object at 0xffff7599a188>
+__setattr__ <method-wrapper '__setattr__' of DetectionCandidate object at 0xffff7599a188>
+__sizeof__ <built-in method __sizeof__ of DetectionCandidate object at 0xffff7599a188>
+__slots__ ['label_id', 'score', 'bounding_box']
+__str__ <method-wrapper '__str__' of DetectionCandidate object at 0xffff7599a188>
+__subclasshook__ <built-in method __subclasshook__ of type object at 0xaaab0b193cb8>
+bounding_box [[  81.14685059   87.80181885]
+ [ 409.31970215  979.27825928]]
+label_id 0
+score 0.828125
+__class__ <class 'edgetpu.detection.engine.DetectionCandidate'>
+__delattr__ <method-wrapper '__delattr__' of DetectionCandidate object at 0xffff7599a1c8>
+__dir__ <built-in method __dir__ of DetectionCandidate object at 0xffff7599a1c8>
+__doc__ Data structure represents one detection candidate.
+__eq__ <method-wrapper '__eq__' of DetectionCandidate object at 0xffff7599a1c8>
+__format__ <built-in method __format__ of DetectionCandidate object at 0xffff7599a1c8>
+__ge__ <method-wrapper '__ge__' of DetectionCandidate object at 0xffff7599a1c8>
+__getattribute__ <method-wrapper '__getattribute__' of DetectionCandidate object at 0xffff7599a1c8>
+__gt__ <method-wrapper '__gt__' of DetectionCandidate object at 0xffff7599a1c8>
+__hash__ <method-wrapper '__hash__' of DetectionCandidate object at 0xffff7599a1c8>
+__init__ <bound method DetectionCandidate.__init__ of <edgetpu.detection.engine.DetectionCandidate object at 0xffff7599a1c8>>
+__le__ <method-wrapper '__le__' of DetectionCandidate object at 0xffff7599a1c8>
+__lt__ <method-wrapper '__lt__' of DetectionCandidate object at 0xffff7599a1c8>
+__module__ edgetpu.detection.engine
+__ne__ <method-wrapper '__ne__' of DetectionCandidate object at 0xffff7599a1c8>
+__new__ <built-in method __new__ of type object at 0xaaaae6f925d0>
+__reduce__ <built-in method __reduce__ of DetectionCandidate object at 0xffff7599a1c8>
+__reduce_ex__ <built-in method __reduce_ex__ of DetectionCandidate object at 0xffff7599a1c8>
+__repr__ <method-wrapper '__repr__' of DetectionCandidate object at 0xffff7599a1c8>
+__setattr__ <method-wrapper '__setattr__' of DetectionCandidate object at 0xffff7599a1c8>
+__sizeof__ <built-in method __sizeof__ of DetectionCandidate object at 0xffff7599a1c8>
+__slots__ ['label_id', 'score', 'bounding_box']
+__str__ <method-wrapper '__str__' of DetectionCandidate object at 0xffff7599a1c8>
+__subclasshook__ <built-in method __subclasshook__ of type object at 0xaaab0b193cb8>
+bounding_box [[ 414.97149658  125.32647705]
+ [ 744.28082275  952.54449463]]
+label_id 0

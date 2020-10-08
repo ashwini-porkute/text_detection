@@ -1,0 +1,154 @@
+README v0.0 01 AUG 2019
+------------------------
+
+# Title : Text Detection using MobileNet SSD.
+
+# Introduction/Overview :
+
+- This task detects the text present in the images.
+- This is achieved by using Tensorflow's Object detection API.
+- The architecture used is MobileNet and model used is Single Shot detector.
+- Purpose behind the task is to detect/locate the text in the images with proper bounding box showing the confidence score for detected text.
+
+# Why MobileNet SSD ?
+
+- Comparing with all other models like YOLO, Inception, Resnet and even small models like Squeezenet, AlexNet we chose the MobileNet architecture due to time and platform resource constraints.
+- Moreover, in real time applications such as Robotics and Self-Driving cars, we need the object identification and localization keeping the speed in mind.
+- MobileNet architecture has core layers based on "Depthwise separable convolutions".
+- Depthwise separable convolutions is a form of factorized convolutions which factorizes the standard convoltions into two operations as mentioned below:
+  >> Depthwise convolution.
+  >> Pointwise convolution.
+- This factorization of standard convolution to depthwise and pointwise convolution drastically leads to reduction in factors like computation cost and model size.
+- Adding depth multiplier(α) and resolution multiplier(ρ) as the main factors that affects the model size and input size.
+- As there is always been a trade-off between speed and accuracy, MobileNet SSD makes the model to increase the speed factor and by compromising the accuracy.
+- And thus, used in application where speed is the relevant factor like in Self-Driving cars and on platform limited to resouces like mobile phones.
+
+# Difference between Standard and Depthwise separable convolution :
+
+- First, we will understand how the standard convolution works, standard convolution do filtering and combining in single step as explained below.
+
+** Standard Convolution:
+------------------------
+- Consider a RGB image of size (12 x 12 x 3) ,which is being convolved with (5 x 5 x 3) filter giving the output of (8 x 8 x 1) dimension.
+  (12 x 12 x 3) ----> (5 x 5 x 3) ----> (8 x 8 x 1)
+- But what if I want the output dimension as (8 x 8 x 256), then this makes the reverse that means we will need the (5 x 5 x 3) size filters 256 times with input image of (12 x 12 x 3 x 256), which is something makes change in input dimension.so we need operation of ( x 256) to be in kernel multiplication itself.
+- This leads to split/factorizes the kernel into 2 parts which leads to introduction of depthwise separable convolution.
+
+					---------------------------------------
+					| Image depicting the std.convolution |
+					---------------------------------------
+
+
+** Depthwise separable Convolution:
+-----------------------------------
+- Depthwise separable Convolution is achieved in two different steps where filtering step is done in depthwise and combining + elongating is done in pointwise.
+- Consider the same as as that of the previous one, with (12 x 12 x 3) RGB image.
+
+* Depthwise:
+------------
+- This (12 x 12 x 3) input image being convolved with [(5 x 5 x 1)] * 3 (each for R,G,B filter) which results in output of (8 x 8 x 3) dimension.
+
+					---------------------------------------------
+					| Image depicting the Depthwise convolution |
+					---------------------------------------------
+
+* Pointwise:
+------------
+- Now even if we want the final dimension to be (8 x 8 x 256), we can combine the previous depthwise results and elongate to get the one
+- (8 x 8 x 3) is being multiplied with [(1 x 1 x 3)] * 256 to get output of (8 x 8 x 256).
+- In general (8 x 8 x 3) is being multiplied with [(1 x 1 x 3)] * mf to get output of (8 x 8 x mf), where mf is multiplying factor.
+- In pointwise convolution the kernel dimension is [(1 x 1)] * 3(for each R,G,B channels).
+
+					---------------------------------------------
+					| Image depicting the Pointwise convolution |
+					---------------------------------------------
+
+- More abstractly, we can say that in the normal convolution, we are transforming the image 256 times. And every transformation uses up 5x5x3x8x8=4800 multiplications. In the separable convolution, we only really transform the image once — in the depthwise convolution. Then, we take the transformed image and simply elongate it to 256 channels. Without having to transform the image over and over again, we can save up on computational power.
+
+
+** But how it reduces the computational power?...still remains a question??
+--------------------------------------------------------------------------
+(Note: make table for this to compare)
+
+1) std. convolution:
+
+- the number of multiplications is std conv. is calculated as:
+  >> (5 x 5 x 3) kernel is being multiplied to get output 256 times i.e. (5 x 5 x 3 x 256) is moved (8 x 8) times on image
+  >> Thus, 5 x 5 x 3 x 256 x 8 x 8 = 12,28,800 mul ops.
+
+2) Depthwise convolution:
+
+  a.) the number of multiplications is Depthwise conv. is calculated as:
+  >> (5 x 5 x 1) kernel is being multiplied to get output 3 times i.e. (5 x 5 x 1 x 3) is moved (8 x 8) times on image
+  >> Thus, 5 x 5 x 1 x 3 x 8 x 8 = 4,800 mul ops.
+
+  b.) the number of multiplications is Pointwise conv. is calculated as:
+  >> (1 x 1 x 3) kernel is being multiplied to get output 256 times i.e. (1 x 1 x 3 x 256) is moved (8 x 8) times on image
+  >> Thus, 1 x 1 x 3 x 256 x 8 x 8 = 49,152 mul ops.
+
+  totalling makes it to 52,952 mul ops, which is about 22 times less operations as compared to std. convolutions.
+
+
+# Dataset Preparation:
+
+- Now the relevent and time taking part comes into picture where we need to collect the dataset according to the requirement, in Object detection API, rather than passing the images for the training we are converting the images and its annotations into Tensorflow's binary Tf_record format.
+- TF_record are preferred as it takes less disk space and reads the data quickly.
+- So, the main goal for dataset preparation is to convert dataset to tf_record format.
+- One can found the list for available Text dataset by visiting "https://lionbridge.ai/datasets/15-best-ocr-handwriting-datasets/".
+- For text detection purpose, chosen SVT(Street View Text) containg nearly 350 images and KAIST dataset containg about 350+ images with annotations in xml format (different xml format for SVT and KAIST).
+- Converted the each xml format to csv using the python script (), examples of the type os xmls sre shown below for both SVT and KAIST:
+
+					-------------------------------------------
+					| Image of the xml for both svt and kaist |
+					-------------------------------------------
+
+- csv converted format has columns like (filename, width, height, label, xmin, ymin, xmax, ymax).
+
+					-------------------------------------------
+					| Image of the csv for both svt and kaist |
+					-------------------------------------------
+- now this csv is converted to tf_record using generate_tfrecord.py
+
+
+# Text detection using Tensorflow's Object detection API:
+
+- One can download or just git clone this repo. "https://github.com/tensorflow/models.git"
+- To train the model using transfer learning, we need to clone ssd_mobilenet_coco checkpoints from "https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md".
+- To train the model using transfer learning one need to modify the ssd_mobilenet_coco.config where we change the terms like - num_classes, fine_tune_checkpoint(for transfer learning), input_path(path to tf_records of the dataset), label_map_path(for labels) according to the structure of your repo.
+- And, we need to create the label_map.txt file according to the labels that we want to detect.
+- Now we are all set to run command to trigger the training process. command used to train is:
+  $ python train.py --logtostderr --train_dir=logs/ --pipeline_config_path=training/ssd_mobilenet_v1_coco.config
+
+					-------------------------
+					| Image of the terminal |
+					-------------------------
+
+- we can evaluate our model is trained by running eval.py using command:
+  $ python object_detection/eval.py  --logtostderr  --pipeline_config_path=training/ssd_mobilenet_v1_pets.config --checkpoint_dir=training/ --eval_dir=./eval_text 
+
+					-------------------------
+					| Image of the terminal |
+					-------------------------
+
+# Visualization on Tensorboard:
+
+- we can visualize the training parameters like classification and localization loss, with the graph using the command below:
+  $ tensorboard --logdir=./logs/
+
+- we can visualize the images are properly trained or not with the detection graph with the command:
+  $ tensorboard --logdir=./eval_text/
+
+					----------------------------
+					| Image of the tensorboard |
+					----------------------------
+
+# Checking the performance metrics of the model:
+
+- To check the performance metrics, you can download or git clone "https://github.com/rafaelpadilla/Object-Detection-Metrics".
+- To check the mAP, one can run the pascalvoc.py to get the ouput as shown:
+  $ python pascalvoc.py
+
+					-------------------------
+					| Image of the terminal |
+					-------------------------
+
